@@ -1,0 +1,477 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Esse é um exemplo de código:
+
+import requests
+import json
+
+class GLPIClient:
+    def __init__(self, url, app_token, user_token, entity_id=0):
+        """
+        Inicializa o cliente GLPI
+        
+        Args:
+            url: URL base da instância GLPI
+            app_token: Token da aplicação
+            user_token: Token do usuário
+            entity_id: ID da entidade padrão
+        """
+        self.url = url.rstrip('/')
+        self.app_token = app_token
+        self.user_token = user_token
+        self.session_token = None
+        self.entity_id = entity_id
+        
+    def init_session(self):
+        """Inicia uma sessão no GLPI e obtém o session-token"""
+        endpoint = f"{self.url}/apirest.php/initSession"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"user_token {self.user_token}",
+            "App-Token": self.app_token
+        }
+        
+        response = requests.get(endpoint, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.session_token = data.get('session_token')
+            return self.session_token
+        else:
+            raise Exception(f"Falha ao iniciar sessão: {response.status_code} - {response.text}")
+    
+    def get_headers(self):
+        """Retorna os headers padrão para requisições autenticadas"""
+        if not self.session_token:
+            raise Exception("Sessão não iniciada. Execute init_session() primeiro")
+            
+        return {
+            "Content-Type": "application/json",
+            "Session-Token": self.session_token,
+            "App-Token": self.app_token
+        }
+    
+    def search_tickets(self, search_params=None):
+        """
+        Pesquisa tickets com base nos parâmetros fornecidos
+        
+        Args:
+            search_params: Dicionário com parâmetros de pesquisa
+        """
+        endpoint = f"{self.url}/apirest.php/Ticket/"
+        headers = self.get_headers()
+        
+        if search_params:
+            query_string = "&".join([f"{k}={v}" for k, v in search_params.items()])
+            endpoint = f"{endpoint}?{query_string}"
+        
+        response = requests.get(endpoint, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Falha ao pesquisar tickets: {response.status_code} - {response.text}")
+    
+    def get_ticket(self, ticket_id):
+        """
+        Obtém detalhes de um ticket específico
+        
+        Args:
+            ticket_id: ID do ticket
+        """
+        endpoint = f"{self.url}/apirest.php/Ticket/{ticket_id}?expand_dropdowns=true&with_logs=true"
+        headers = self.get_headers()
+        
+        response = requests.get(endpoint, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Falha ao obter ticket: {response.status_code} - {response.text}")
+    
+    def create_ticket(self, data):
+        """
+        Cria um novo ticket
+        
+        Args:
+            data: Dicionário com dados do ticket
+        """
+        endpoint = f"{self.url}/apirest.php/Ticket"
+        headers = self.get_headers()
+        
+        # Adiciona a entidade padrão se não especificada
+        if 'entities_id' not in data:
+            data['entities_id'] = self.entity_id
+        
+        response = requests.post(endpoint, headers=headers, json=data)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise Exception(f"Falha ao criar ticket: {response.status_code} - {response.text}")
+    
+    def update_ticket(self, ticket_id, data):
+        """
+        Atualiza um ticket existente
+        
+        Args:
+            ticket_id: ID do ticket
+            data: Dicionário com dados a serem atualizados
+        """
+        endpoint = f"{self.url}/apirest.php/Ticket/{ticket_id}"
+        headers = self.get_headers()
+        
+        response = requests.put(endpoint, headers=headers, json=data)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Falha ao atualizar ticket: {response.status_code} - {response.text}")
+    
+    def add_followup(self, ticket_id, content, is_private=False):
+        """
+        Adiciona um acompanhamento a um ticket
+        
+        Args:
+            ticket_id: ID do ticket
+            content: Conteúdo do acompanhamento
+            is_private: Indica se o acompanhamento é privado
+        """
+        endpoint = f"{self.url}/apirest.php/Ticket/{ticket_id}/ITILFollowup"
+        headers = self.get_headers()
+        
+        data = {
+            "items_id": ticket_id,
+            "itemtype": "Ticket",
+            "content": content,
+            "is_private": 1 if is_private else 0
+        }
+        
+        response = requests.post(endpoint, headers=headers, json=data)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise Exception(f"Falha ao adicionar acompanhamento: {response.status_code} - {response.text}")
+    
+    def add_solution(self, ticket_id, content, status=5):
+        """
+        Adiciona uma solução a um ticket
+        
+        Args:
+            ticket_id: ID do ticket
+            content: Conteúdo da solução
+            status: Status do ticket após adicionar a solução (5=Fechado)
+        """
+        endpoint = f"{self.url}/apirest.php/Ticket/{ticket_id}/ITILSolution"
+        headers = self.get_headers()
+        
+        data = {
+            "itemtype": "Ticket",
+            "items_id": ticket_id,
+            "content": content,
+            "status": status
+        }
+        
+        response = requests.post(endpoint, headers=headers, json=data)
+        
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise Exception(f"Falha ao adicionar solução: {response.status_code} - {response.text}")
+    
+    def get_categories(self):
+        """Obtém a lista de categorias disponíveis"""
+        endpoint = f"{self.url}/apirest.php/ITILCategory?expand_dropdowns=true&range=0-1000"
+        headers = self.get_headers()
+        
+        response = requests.get(endpoint, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Falha ao obter categorias: {response.status_code} - {response.text}")
+    
+    def kill_session(self):
+        """Encerra a sessão atual"""
+        if not self.session_token:
+            return True
+            
+        endpoint = f"{self.url}/apirest.php/killSession"
+        headers = self.get_headers()
+        
+        response = requests.get(endpoint, headers=headers)
+        
+        if response.status_code == 200:
+            self.session_token = None
+            return True
+        else:
+            raise Exception(f"Falha ao encerrar sessão: {response.status_code} - {response.text}")
+    
+    def __del__(self):
+        """Destrutor que tenta encerrar a sessão automaticamente"""
+        try:
+            if self.session_token:
+                self.kill_session()
+        except:
+            pass
+
+
+# Exemplo de Agente de Decisão
+class GLPIAgent:
+    def __init__(self, glpi_client):
+        """
+        Inicializa o agente de decisão
+        
+        Args:
+            glpi_client: Instância de GLPIClient
+        """
+        self.client = glpi_client
+        self.categories = None
+        
+    def get_categories_map(self):
+        """Obtém e armazena mapa de categorias para uso nas decisões"""
+        if self.categories is None:
+            categories_data = self.client.get_categories()
+            self.categories = {cat['id']: cat['name'] for cat in categories_data}
+        return self.categories
+    
+    def thinking(self, demand_description):
+        """
+        Implementa o processo de raciocínio para classificar a demanda
+        
+        Args:
+            demand_description: Descrição da demanda
+        """
+        # Este método seria implementado com lógica de IA ou regras de negócio
+        print(f"Analisando demanda: {demand_description[:50]}...")
+        
+        # Exemplo simples de classificação baseada em palavras-chave
+        categories = self.get_categories_map()
+        
+        if "hardware" in demand_description.lower():
+            category_id = next((k for k, v in categories.items() if "hardware" in v.lower()), None)
+        elif "software" in demand_description.lower():
+            category_id = next((k for k, v in categories.items() if "software" in v.lower()), None)
+        elif "rede" in demand_description.lower() or "network" in demand_description.lower():
+            category_id = next((k for k, v in categories.items() if "rede" in v.lower() or "network" in v.lower()), None)
+        else:
+            # Categoria padrão
+            category_id = list(categories.keys())[0] if categories else None
+            
+        print(f"Categoria selecionada: {categories.get(category_id, 'Desconhecida')}")
+        
+        return {
+            "category_id": category_id,
+            "urgency": 3,  # Média (escala 1-5)
+            "impact": 3,   # Médio (escala 1-5)
+            "priority": 3  # Média (escala 1-5)
+        }
+    
+    def searching(self, keywords, requester=None):
+        """
+        Implementa busca por tickets relacionados
+        
+        Args:
+            keywords: Palavras-chave para busca
+            requester: Requerente (opcional)
+        """
+        # Exemplo simples de busca
+        search_criteria = {
+            "searchText[name]": keywords
+        }
+        
+        if requester:
+            search_criteria["searchText[_users_id_requester]"] = requester
+        
+        print(f"Buscando tickets relacionados a: {keywords}")
+        related_tickets = self.client.search_tickets(search_criteria)
+        
+        return related_tickets
+    
+    def decide_action(self, demand_description, ticket_id=None, requester=None):
+        """
+        Decide qual ação tomar com base na descrição da demanda
+        
+        Args:
+            demand_description: Descrição da demanda
+            ticket_id: ID do ticket (se existente)
+            requester: ID do requerente
+        """
+        # Se temos um ID de ticket, provavelmente é uma atualização
+        if ticket_id:
+            ticket_info = self.client.get_ticket(ticket_id)
+            
+            # Verifica se já possui uma solução
+            if ticket_info.get('status') == 5:  # Status 5 = Fechado
+                print(f"Ticket #{ticket_id} já está fechado.")
+                return {
+                    "action": "none",
+                    "message": f"Ticket #{ticket_id} já está fechado."
+                }
+            
+            # Decide entre atualizar ou resolver
+            if "resolvido" in demand_description.lower() or "finalizado" in demand_description.lower():
+                analysis = self.thinking(demand_description)
+                
+                return {
+                    "action": "resolve",
+                    "ticket_id": ticket_id,
+                    "solution": demand_description,
+                    "analysis": analysis
+                }
+            else:
+                return {
+                    "action": "update",
+                    "ticket_id": ticket_id,
+                    "content": demand_description
+                }
+        else:
+            # Verifica se existem tickets relacionados
+            related = self.searching(demand_description[:50], requester)
+            
+            if related and len(related) > 0:
+                print(f"Encontrados {len(related)} tickets relacionados.")
+                
+                # Avalia se deve criar novo ou atualizar existente
+                # Lógica simplificada: se encontrou aberto, atualiza o primeiro
+                for ticket in related:
+                    if ticket.get('status') != 5:  # Não fechado
+                        return {
+                            "action": "update",
+                            "ticket_id": ticket['id'],
+                            "content": demand_description,
+                            "message": f"Atualizando ticket existente #{ticket['id']}"
+                        }
+            
+            # Se chegou aqui, cria novo
+            analysis = self.thinking(demand_description)
+            
+            return {
+                "action": "create",
+                "title": demand_description[:50] + "...",
+                "content": demand_description,
+                "category_id": analysis.get("category_id"),
+                "urgency": analysis.get("urgency", 3),
+                "impact": analysis.get("impact", 3),
+                "requester_id": requester
+            }
+    
+    def execute_action(self, action_plan):
+        """
+        Executa a ação decidida
+        
+        Args:
+            action_plan: Plano de ação gerado por decide_action
+        """
+        action = action_plan.get("action")
+        
+        if action == "none":
+            return {
+                "status": "info",
+                "message": action_plan.get("message", "Nenhuma ação necessária")
+            }
+        
+        elif action == "create":
+            # Prepara dados do ticket
+            ticket_data = {
+                "name": action_plan.get("title"),
+                "content": action_plan.get("content"),
+                "itilcategories_id": action_plan.get("category_id"),
+                "urgency": action_plan.get("urgency", 3),
+                "impact": action_plan.get("impact", 3)
+            }
+            
+            if action_plan.get("requester_id"):
+                ticket_data["_users_id_requester"] = action_plan.get("requester_id")
+            
+            # Cria o ticket
+            result = self.client.create_ticket(ticket_data)
+            
+            return {
+                "status": "success",
+                "message": f"Ticket #{result.get('id')} criado com sucesso",
+                "ticket_id": result.get('id')
+            }
+        
+        elif action == "update":
+            # Adiciona acompanhamento
+            result = self.client.add_followup(
+                action_plan.get("ticket_id"),
+                action_plan.get("content")
+            )
+            
+            return {
+                "status": "success",
+                "message": f"Ticket #{action_plan.get('ticket_id')} atualizado com sucesso",
+                "followup_id": result.get('id')
+            }
+        
+        elif action == "resolve":
+            # Adiciona solução
+            result = self.client.add_solution(
+                action_plan.get("ticket_id"),
+                action_plan.get("solution")
+            )
+            
+            return {
+                "status": "success",
+                "message": f"Ticket #{action_plan.get('ticket_id')} resolvido com sucesso",
+                "solution_id": result.get('id')
+            }
+        
+        else:
+            return {
+                "status": "error",
+                "message": f"Ação desconhecida: {action}"
+            }
+
+
+# Exemplo de uso
+if __name__ == "__main__":
+    # Configurações
+    config = {
+        "url": "https://suporte.exemplo.com.br",
+        "app_token": "seu_app_token_aqui",
+        "user_token": "seu_user_token_aqui",
+        "entity_id": 0  # Entidade raiz
+    }
+    
+    # Inicializa cliente
+    client = GLPIClient(
+        config["url"],
+        config["app_token"],
+        config["user_token"],
+        config["entity_id"]
+    )
+    
+    try:
+        # Inicia sessão
+        client.init_session()
+        print("Sessão iniciada com sucesso!")
+        
+        # Inicializa agente
+        agent = GLPIAgent(client)
+        
+        # Exemplo: processa uma demanda
+        demanda = "Meu computador está apresentando tela azul ao iniciar o Windows. Já reiniciei várias vezes mas o problema persiste."
+        requester_id = 123  # ID do usuário requerente
+        
+        # Decide ação
+        action_plan = agent.decide_action(demanda, requester_id=requester_id)
+        print(f"Plano de ação: {action_plan['action']}")
+        
+        # Executa ação
+        result = agent.execute_action(action_plan)
+        print(f"Resultado: {result['message']}")
+        
+    except Exception as e:
+        print(f"Erro: {str(e)}")
+    
+    finally:
+        # Encerra sessão
+        client.kill_session()
+        print("Sessão encerrada!")

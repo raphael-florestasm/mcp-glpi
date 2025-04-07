@@ -1,0 +1,242 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Objetivo
+Desenvolver um servidor MCP (Management Control Protocol) que interaja com a API do GLPI para gerenciar tickets de suporte de forma autônoma, permitindo que um agente de IA tome decisões sobre a abertura, atualização e fechamento de chamados com base em instruções recebidas.
+Requisitos Técnicos
+Autenticação
+
+Implementar fluxo de autenticação na API do GLPI com:
+
+URL base da instância GLPI
+App-Token (para autenticação da aplicação)
+User-Token (para autorização do usuário)
+Gerenciamento de session-token (obtido após login bem-sucedido)
+Configuração da Entidade padrão para operações
+
+
+
+Funcionalidades Principais
+
+Gestão de Sessão
+
+Iniciar sessão e obter session-token
+Renovar session-token quando expirado
+Encerrar sessão adequadamente
+
+
+Operações com Tickets
+
+Pesquisa avançada de tickets por:
+
+ID
+Requerente
+Título
+Status
+Categoria
+
+
+Leitura completa de tickets (incluindo histórico de interações)
+Criação de novos tickets
+Atualização de tickets existentes
+Adição de acompanhamentos (follow-ups)
+Adição de soluções
+Mudança de status
+Fechamento de tickets
+
+
+Consultas Especializadas
+
+Listar tickets por status
+Listar tickets por status e requerente
+Listar tickets por categoria
+Obter lista completa de categorias disponíveis
+
+
+
+Arquitetura e Organização
+
+Estrutura Modular
+
+Módulo de autenticação
+Módulo de gerenciamento de tickets
+Módulo de consultas e relatórios
+Módulo de tomada de decisão do agente
+
+
+Interface para o Agente IA
+
+API REST para comunicação entre o agente e o servidor MCP
+Endpoints específicos para cada operação
+Documentação clara dos endpoints e parâmetros
+
+
+
+Capacidades de Tomada de Decisão do Agente
+O agente deve ser capaz de:
+
+Analisar Demandas
+
+Compreender a descrição da demanda
+Identificar a categoria apropriada consultando a lista disponível no GLPI
+Classificar a prioridade baseada no conteúdo
+
+
+Determinar Ações
+
+Decidir se deve abrir um novo ticket
+Decidir se deve atualizar um ticket existente
+Decidir se deve adicionar uma solução a um ticket
+Decidir quando um ticket deve ser fechado
+
+
+Executar Operações no GLPI
+
+Construir requisições adequadas para a API
+Interpretar respostas da API
+Verificar sucesso das operações
+Retornar feedback apropriado
+
+
+
+Implementação e Integração com a API do GLPI
+Endpoints Principais a Implementar
+
+Iniciar Sessão
+CopiarPOST /apirest.php/initSession
+Headers:
+  - App-Token: {app_token}
+  - Authorization: user_token {user_token}
+
+Listar Tickets
+CopiarGET /apirest.php/Ticket
+Headers:
+  - Session-Token: {session_token}
+  - App-Token: {app_token}
+Query Parameters:
+  - Diversos filtros conforme necessidade
+
+Criar Ticket
+CopiarPOST /apirest.php/Ticket
+Headers:
+  - Session-Token: {session_token}
+  - App-Token: {app_token}
+Body:
+  - JSON com dados do ticket
+
+Atualizar Ticket
+CopiarPUT /apirest.php/Ticket/{id}
+Headers:
+  - Session-Token: {session_token}
+  - App-Token: {app_token}
+Body:
+  - JSON com dados atualizados
+
+Adicionar Follow-up
+CopiarPOST /apirest.php/Ticket/{id}/ITILFollowup
+Headers:
+  - Session-Token: {session_token}
+  - App-Token: {app_token}
+Body:
+  - JSON com dados do follow-up
+
+Adicionar Solução
+CopiarPOST /apirest.php/Ticket/{id}/ITILSolution
+Headers:
+  - Session-Token: {session_token}
+  - App-Token: {app_token}
+Body:
+  - JSON com dados da solução
+
+Consultar Categorias
+CopiarGET /apirest.php/ITILCategory
+Headers:
+  - Session-Token: {session_token}
+  - App-Token: {app_token}
+
+Encerrar Sessão
+CopiarPOST /apirest.php/killSession
+Headers:
+  - Session-Token: {session_token}
+  - App-Token: {app_token}
+
+
+Recursos Adicionais
+Capacidade de "Thinking" (Raciocínio)
+Implementar um módulo que permita ao agente:
+
+Analisar o conteúdo da demanda antes de tomar uma decisão
+Registrar o processo de raciocínio para auditoria
+Ponderar entre diferentes categorias possíveis
+Determinar a melhor ação com base em histórico de tickets similares
+
+Capacidade de "Searching" (Pesquisa)
+Implementar um módulo que permita ao agente:
+
+Buscar tickets relacionados antes de criar um novo
+Pesquisar na base de conhecimento por soluções conhecidas
+Consultar histórico de tickets do mesmo requerente
+Verificar padrões em tickets da mesma categoria
+
+Tratamento de Erros e Exceções
+
+Resiliência
+
+Tratamento de falhas de conexão
+Renovação de tokens expirados
+Tentativas múltiplas para operações críticas
+
+
+Validação
+
+Validar dados antes de enviar para API
+Verificar permissões antes de executar operações
+Confirmar resultados após cada operação
+
+
+Logging
+
+Registrar todas as operações para auditoria
+Capturar erros com detalhes para depuração
+Manter histórico de decisões tomadas pelo agente
+
+
+
+Segurança
+
+Proteção de Credenciais
+
+Armazenamento seguro de tokens
+Rotação periódica de tokens
+Configuração via variáveis de ambiente
+
+
+Controle de Acesso
+
+Limitar operações por perfil de usuário
+Verificar permissões antes de executar operações
+Registrar todas as ações para auditoria
+
+
+
+Documentação e Testes
+
+Documentação
+
+API do servidor MCP
+Fluxos de decisão do agente
+Integração com GLPI
+
+
+Testes
+
+Testes unitários para cada módulo
+Testes de integração com GLPI
+Testes de carga para verificar limites
+
+
+
+Referência
+A documentação completa da API do GLPI está disponível em: https://github.com/glpi-project/glpi/blob/main/apirest.md

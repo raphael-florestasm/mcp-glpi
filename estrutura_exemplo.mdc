@@ -1,0 +1,46 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Estrutura Recomendada do Projeto
+Para implementar esta solução de forma organizada e escalável, recomendo a seguinte estrutura de diretórios e arquivos:
+Copiarglpi-mcp-server/
+├── config/
+│   ├── __init__.py
+│   ├── settings.py           # Configurações da aplicação
+│   └── logging_config.py     # Configuração de logs
+├── src/
+│   ├── __init__.py
+│   ├── auth/                 # Módulo de autenticação
+│   │   ├── __init__.py
+│   │   └── session.py        # Gerenciamento de sessão GLPI
+│   ├── api/                  # API do servidor MCP
+│   │   ├── __init__.py
+│   │   ├── routes.py         # Definição de rotas da API
+│   │   └── controllers.py    # Controladores da API
+│   ├── glpi/                 # Cliente GLPI
+│   │   ├── __init__.py
+│   │   ├── client.py         # Cliente base GLPI
+│   │   ├── tickets.py        # Operações com tickets
+│   │   └── categories.py     # Operações com categorias
+│   ├── agent/                # Agente de decisão
+│   │   ├── __init__.py
+│   │   ├── decision.py       # Lógica de tomada de decisão
+│   │   ├── thinking.py       # Módulo de raciocínio
+│   │   └── searching.py      # Módulo de pesquisa
+│   └── utils/                # Utilitários
+│       ├── __init__.py
+│       ├── error_handling.py # Tratamento de erros
+│       └── validators.py     # Validadores de dados
+├── tests/                    # Testes
+│   ├── __init__.py
+│   ├── test_auth.py
+│   ├── test_client.py
+│   └── test_agent.py
+├── docs/                     # Documentação
+│   ├── api.md
+│   └── examples.md
+├── main.py                   # Ponto de entrada da aplicação
+├── requirements.txt          # Dependências
+└── README.md                 # Instruções gerais

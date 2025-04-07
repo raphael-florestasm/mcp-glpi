@@ -1,0 +1,26 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Considerações Finais
+
+Segurança
+
+Armazene tokens e credenciais em variáveis de ambiente ou cofre seguro
+Implemente rate limiting para evitar sobrecarga da API do GLPI
+Registre todas as operações para auditoria
+
+
+Performance
+
+Implemente cache para consultas frequentes (categorias, status, etc.)
+Use connection pooling para requisições HTTP
+Considere processamento assíncrono para operações não críticas
+
+
+Manutenção
+
+Documente todas as funções e módulos
+Implemente testes automatizados
+Configure monitoramento e alertas

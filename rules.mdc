@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- Mantenha o git sempre atualizado e certifique-se que está em funcionamento antes das execuções de alterações.
+- Faça commits e pushes constantes, para manter o projeto salvo.
+- Evite sempre mudar funções que envolvem outros módulos, para ao corrigir um problema. não parar outro módulo.
