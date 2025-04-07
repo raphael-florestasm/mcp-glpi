@@ -6,6 +6,9 @@ Defines the REST API endpoints for the MCP server.
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+import os
+import platform
+from datetime import datetime
 
 from src.auth.session import GLPISession
 from src.glpi.client import GLPIClient
@@ -253,4 +256,33 @@ async def execute_action(action: Dict[str, Any]):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
-        ) 
+        )
+
+# Health and Monitoring Routes
+@router.get("/health", response_model=Dict[str, str])
+async def health_check():
+    """Check system health."""
+    try:
+        # Verificar conexão com GLPI (simulação)
+        # Em produção, seria uma verificação real
+        
+        return {
+            "status": "ok",
+            "timestamp": datetime.now().isoformat(),
+            "service": "MCP GLPI Server"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Serviço indisponível"
+        )
+
+@router.get("/version", response_model=Dict[str, Any])
+async def get_version():
+    """Get system version info."""
+    return {
+        "version": "1.0.0",
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "hostname": platform.node()
+    } 
