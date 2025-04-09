@@ -19,23 +19,43 @@ Servidor MCP (Management Control Protocol) para integração com GLPI (Gestionna
 
 ## 💾 Instalação
 
-### Método 1: Instalação direta (Linux)
+### Método 1: Instalação Interativa (Recomendado)
+
+A maneira mais simples de instalar o MCP GLPI Server é usando nosso assistente interativo:
 
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/mcp-glpi.git
+git clone https://github.com/raphael-florestasm/mcp-glpi.git
 cd mcp-glpi
 
-# Execute o script de instalação
-chmod +x install.sh
-./install.sh
+# Torne o script de instalação executável
+chmod +x setup_interactive.sh
+
+# Execute o script de instalação interativa
+./setup_interactive.sh
 ```
+
+O script irá guiá-lo através do processo de configuração, solicitando as informações necessárias:
+1. URL do GLPI
+2. App-Token do GLPI
+3. User-Token do GLPI
+4. ID da Entidade padrão
+5. Configurações do servidor (host, porta)
+
+O script automaticamente:
+- Gera uma chave JWT segura
+- Cria o arquivo .env com suas configurações
+- Configura o ambiente virtual Python
+- Instala todas as dependências
+- Prepara o servidor para execução
 
 ### Método 2: Instalação manual
 
+Se preferir configurar manualmente:
+
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/mcp-glpi.git
+git clone https://github.com/raphael-florestasm/mcp-glpi.git
 cd mcp-glpi
 
 # Crie e ative um ambiente virtual
@@ -56,7 +76,7 @@ cp .env.example .env
 
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/mcp-glpi.git
+git clone https://github.com/raphael-florestasm/mcp-glpi.git
 cd mcp-glpi
 
 # Configure as variáveis de ambiente
@@ -77,17 +97,24 @@ Para utilizar este servidor MCP, você precisa configurar sua instância GLPI pa
 4. Crie um token de aplicação (App-Token)
 5. Crie um token de usuário para autenticação (User-Token)
 
-Após obter os tokens, configure o arquivo `.env` com as informações:
-
-```env
-GLPI_URL=http://seu-servidor-glpi
-GLPI_APP_TOKEN=seu-app-token
-GLPI_USER_TOKEN=seu-user-token
-```
+Após obter os tokens, você pode fornecer essas informações durante a instalação interativa ou configurar manualmente no arquivo `.env`.
 
 ## 🚀 Iniciando o servidor
 
-### Método padrão
+### Método Interativo (Após a instalação)
+
+```bash
+# Iniciar o servidor em modo de desenvolvimento
+./start_server.sh
+
+# Ou iniciar em background (modo daemon)
+./start_server_daemon.sh
+
+# Para parar o servidor que está rodando em background
+./stop_server.sh
+```
+
+### Método Manual
 
 ```bash
 # Ative o ambiente virtual se necessário
@@ -130,7 +157,10 @@ mcp-glpi/
 ├── requirements.txt     # Dependências do projeto
 ├── Dockerfile           # Configuração para Docker
 ├── docker-compose.yml   # Configuração do Docker Compose
-├── install.sh           # Script de instalação para Linux
+├── setup_interactive.sh # Script de instalação interativa
+├── start_server.sh      # Script para iniciar o servidor
+├── start_server_daemon.sh # Script para iniciar em background
+├── stop_server.sh       # Script para parar o servidor
 ├── .env.example         # Exemplo de configuração
 ├── src/
 │   ├── auth/            # Autenticação e sessão
@@ -159,7 +189,7 @@ pip install -r requirements.txt
 ### Problemas com permissões no Linux
 
 ```bash
-chmod +x install.sh
+chmod +x *.sh
 chmod +x main.py
 ```
 
@@ -173,4 +203,4 @@ chmod +x main.py
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está licenciado sob a licença Apache 2.0 - veja o arquivo LICENSE para mais detalhes.
