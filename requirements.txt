@@ -8,4 +8,7 @@ python-multipart==0.0.6
 pydantic==2.4.2
 pydantic-settings==2.0.3
 pytest==7.4.3
-httpx==0.25.1 
+httpx==0.25.1
+sse-starlette==1.6.5
+click==8.1.7
+sseclient-py==1.7.2 

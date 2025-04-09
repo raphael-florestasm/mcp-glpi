@@ -17,9 +17,13 @@ from src.glpi.categories import GLPICategoryManager
 from src.agent.decision import MCPDecisionMaker
 from src.agent.thinking import MCPThinker
 from src.agent.searching import MCPSearcher
+from api.sse import sse_router, send_ticket_event
 
 # Create router
 router = APIRouter()
+
+# Include SSE routes
+router.include_router(sse_router, prefix="/sse", tags=["sse"])
 
 # Initialize services
 session = GLPISession()
@@ -76,6 +80,14 @@ async def create_ticket(ticket: TicketCreate):
     """Create a new ticket."""
     try:
         result = ticket_manager.create_ticket(**ticket.dict())
+        
+        # Send SSE event
+        await send_ticket_event(
+            ticket_id=result["id"],
+            event_type="ticket_created",
+            data=result
+        )
+        
         return result
     except Exception as e:
         raise HTTPException(
@@ -100,6 +112,14 @@ async def update_ticket(ticket_id: int, ticket: TicketUpdate):
     """Update a ticket."""
     try:
         result = ticket_manager.update_ticket(ticket_id, **ticket.dict(exclude_unset=True))
+        
+        # Send SSE event
+        await send_ticket_event(
+            ticket_id=ticket_id,
+            event_type="ticket_updated",
+            data=result
+        )
+        
         return result
     except Exception as e:
         raise HTTPException(
@@ -112,6 +132,14 @@ async def add_followup(ticket_id: int, followup: FollowupCreate):
     """Add a follow-up to a ticket."""
     try:
         result = ticket_manager.add_followup(ticket_id, **followup.dict())
+        
+        # Send SSE event
+        await send_ticket_event(
+            ticket_id=ticket_id,
+            event_type="followup_added",
+            data=result
+        )
+        
         return result
     except Exception as e:
         raise HTTPException(
@@ -124,6 +152,14 @@ async def add_solution(ticket_id: int, solution: SolutionCreate):
     """Add a solution to a ticket."""
     try:
         result = ticket_manager.add_solution(ticket_id, **solution.dict())
+        
+        # Send SSE event
+        await send_ticket_event(
+            ticket_id=ticket_id,
+            event_type="solution_added",
+            data=result
+        )
+        
         return result
     except Exception as e:
         raise HTTPException(

@@ -10,6 +10,8 @@ Servidor MCP (Management Control Protocol) para integração com GLPI (Gestionna
 - Sistema de decisão inteligente para categorização e priorização
 - Busca avançada por tickets e soluções
 - API RESTful documentada com Swagger/OpenAPI
+- Suporte a Server-Sent Events (SSE) para notificações em tempo real
+- Interface de comunicação via stdin/stdout para integração com outros sistemas
 
 ## 📋 Pré-requisitos
 
@@ -137,6 +139,44 @@ O servidor estará disponível em:
 - Documentação: http://localhost:8000/docs
 - Verificação de saúde: http://localhost:8000/api/v1/health
 
+## 🔌 Clientes e Integrações
+
+O MCP GLPI Server oferece diferentes métodos de integração para atender às necessidades de diversos cenários:
+
+### API REST
+
+A API REST é a forma principal de integração. Consulte a documentação em http://localhost:8000/docs para detalhes sobre os endpoints disponíveis.
+
+### Server-Sent Events (SSE)
+
+Para aplicações que necessitam de atualizações em tempo real, o servidor oferece suporte a SSE:
+
+```bash
+# Monitorar eventos de um ticket específico
+python mcp_sse_client.py watch 123
+
+# Monitorar todos os eventos de tickets
+python mcp_sse_client.py monitor
+```
+
+### Interface Stdin/Stdout
+
+Para integração com outros sistemas ou uso em scripts, o servidor pode ser acessado via stdin/stdout:
+
+```bash
+# Iniciar o cliente stdin/stdout
+python mcp_stdio_client.py run
+
+# Ver exemplos de comandos
+python mcp_stdio_client.py example
+```
+
+Exemplo de comando JSON via stdin:
+
+```json
+{"command": "create_ticket", "ticket": {"name": "Problema com impressora", "content": "A impressora não está funcionando", "itilcategories_id": 1}}
+```
+
 ## 🧪 Testes
 
 Para executar os testes do projeto:
@@ -161,11 +201,14 @@ mcp-glpi/
 ├── start_server.sh      # Script para iniciar o servidor
 ├── start_server_daemon.sh # Script para iniciar em background
 ├── stop_server.sh       # Script para parar o servidor
+├── mcp_stdio_client.py  # Cliente para integração via stdin/stdout
+├── mcp_sse_client.py    # Cliente para eventos via SSE
 ├── .env.example         # Exemplo de configuração
 ├── src/
 │   ├── auth/            # Autenticação e sessão
 │   ├── glpi/            # Integração com GLPI
-│   └── agent/           # Lógica do agente MCP
+│   ├── agent/           # Lógica do agente MCP
+│   └── client/          # Clientes para integração
 ├── api/                 # Rotas da API
 ├── config/              # Configurações
 └── tests/               # Testes automatizados
