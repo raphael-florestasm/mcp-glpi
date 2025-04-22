@@ -16,6 +16,11 @@ Servidor MCP (Management Control Protocol) para integração com GLPI (Gestionna
 ## 📋 Pré-requisitos
 
 - Python 3.8 ou superior
+- Pacotes do sistema (para instalação direta):
+  - `python3-pip`
+  - `python3-venv` 
+  - `python3-full` (para Ubuntu 22.04+)
+- Docker (alternativa recomendada para servidores)
 - Acesso a uma instância GLPI (versão 9.5 ou superior)
 - Token de API do GLPI
 
@@ -216,6 +221,52 @@ mcp-glpi/
 
 ## 🔧 Solução de Problemas
 
+Para uma lista completa de problemas comuns e suas soluções, consulte o [Guia de Solução de Problemas](troubleshooting.md).
+
+### Problemas com ambientes Python no Ubuntu
+
+Em versões mais recentes do Ubuntu (22.04+), você pode encontrar problemas relacionados a ambientes Python gerenciados externamente. Existem algumas soluções:
+
+1. **Instale os pacotes necessários do sistema**:
+```bash
+sudo apt update
+sudo apt install python3-pip python3-venv python3-full
+```
+
+2. **Crie um ambiente virtual com acesso a pacotes do sistema**:
+```bash
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+python -m pip install -r requirements.txt --no-cache-dir
+```
+
+3. **Utilize a instalação via Docker (recomendado para servidores)**:
+```bash
+# Configure as variáveis de ambiente
+cp .env.example .env
+# Edite o arquivo .env com suas configurações
+
+# Inicie o contêiner
+docker-compose up -d
+```
+
+### Erro "externally-managed-environment"
+
+Se você encontrar o erro `externally-managed-environment` ao instalar pacotes, isso significa que o sistema está utilizando um ambiente Python gerenciado pelo sistema operacional. Para resolver isso:
+
+```bash
+# Método 1: Usar o ambiente virtual com acesso aos pacotes do sistema
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+python -m pip install -r requirements.txt --no-cache-dir
+
+# Método 2: Instalar usando a flag --break-system-packages (não recomendado)
+pip install -r requirements.txt --break-system-packages
+
+# Método 3: Usar o Docker (recomendado para servidores de produção)
+docker-compose up -d
+```
+
 ### Problemas de conexão com o GLPI
 
 - Verifique se a URL do GLPI está correta e acessível
@@ -225,8 +276,10 @@ mcp-glpi/
 ### Erro na instalação de dependências
 
 ```bash
-pip install --upgrade pip
-pip install -r requirements.txt
+# Atualize o pip primeiro
+python -m pip install --upgrade pip
+# Tente instalar sem usar o cache
+python -m pip install -r requirements.txt --no-cache-dir
 ```
 
 ### Problemas com permissões no Linux

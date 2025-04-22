@@ -1,5 +1,39 @@
 #!/bin/bash
 
+# Função para verificar e instalar dependências do sistema
+check_system_dependencies() {
+    echo "Verificando dependências do sistema..."
+    
+    # Verificar a versão do Python disponível
+    PYTHON_VERSION=$(python3 --version 2>&1 | cut -d" " -f2 | cut -d"." -f1,2)
+    PYTHON_MINOR=$(python3 --version 2>&1 | cut -d" " -f2 | cut -d"." -f2)
+    
+    echo "Versão do Python detectada: $(python3 --version)"
+    
+    # Verificar se o pip e venv estão instalados
+    if ! command -v pip3 &> /dev/null || ! dpkg -l | grep -qE "python3-venv|python3-pip"; then
+        echo "Instalando pacotes necessários para o ambiente Python..."
+        echo "Você será solicitado a fornecer sua senha para instalar os pacotes do sistema."
+        
+        # Determinar o pacote python3-venv correto baseado na versão do Python
+        VENV_PACKAGE="python3-venv"
+        if [ -n "$PYTHON_VERSION" ]; then
+            VENV_PACKAGE="python3-venv python3-full"
+        fi
+        
+        sudo apt update
+        sudo apt install -y python3-pip $VENV_PACKAGE
+        
+        if [ $? -ne 0 ]; then
+            echo "⚠️ Falha ao instalar pacotes necessários."
+            echo "Por favor, instale manualmente os seguintes pacotes e execute este script novamente:"
+            echo "  - python3-pip"
+            echo "  - $VENV_PACKAGE"
+            exit 1
+        fi
+    fi
+}
+
 # Função para gerar uma chave JWT aleatória
 generate_jwt_secret() {
     cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1
@@ -10,6 +44,9 @@ create_log_dir() {
     mkdir -p logs
     echo "Diretório de logs criado."
 }
+
+# Verificar dependências do sistema primeiro
+check_system_dependencies
 
 # Mensagem de boas-vindas
 echo "================================================================="
@@ -80,12 +117,41 @@ create_log_dir
 echo ""
 echo "Configurando ambiente virtual Python..."
 python3 -m venv venv
+
+# Verificar se a criação do ambiente virtual foi bem-sucedida
+if [ ! -f "venv/bin/activate" ]; then
+    echo "⚠️ Falha ao criar o ambiente virtual Python."
+    echo "Por favor, tente criar manualmente com o comando:"
+    echo "  python3 -m venv venv"
+    exit 1
+fi
+
 source venv/bin/activate
 
-# Instalar dependências
+# Atualizar pip e instalar dependências
 echo ""
 echo "Instalando dependências..."
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+# Se a instalação falhar, ofereça instruções alternativas
+if [ $? -ne 0 ]; then
+    echo "⚠️ Falha ao instalar as dependências."
+    echo "Isso pode ocorrer em sistemas Ubuntu mais recentes com ambientes Python gerenciados externamente."
+    echo ""
+    echo "Tente o seguinte método alternativo:"
+    echo "1. Crie um ambiente virtual fora do sistema:"
+    echo "   python3 -m venv --system-site-packages venv"
+    echo ""
+    echo "2. Ative o ambiente virtual:"
+    echo "   source venv/bin/activate"
+    echo ""
+    echo "3. Instale as dependências com:"
+    echo "   python -m pip install -r requirements.txt --no-cache-dir"
+    echo ""
+    echo "Ou use o método Docker descrito no README.md"
+    exit 1
+fi
 
 # Tornar scripts executáveis
 echo ""
