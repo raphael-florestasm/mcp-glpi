@@ -6,29 +6,21 @@ check_system_dependencies() {
     
     # Verificar a versão do Python disponível
     PYTHON_VERSION=$(python3 --version 2>&1 | cut -d" " -f2 | cut -d"." -f1,2)
-    PYTHON_MINOR=$(python3 --version 2>&1 | cut -d" " -f2 | cut -d"." -f2)
     
     echo "Versão do Python detectada: $(python3 --version)"
     
-    # Verificar se o pip e venv estão instalados
-    if ! command -v pip3 &> /dev/null || ! dpkg -l | grep -qE "python3-venv|python3-pip"; then
+    # Verificar se os pacotes necessários estão instalados
+    if ! dpkg -l python3-venv &> /dev/null || ! dpkg -l python3-full &> /dev/null; then
         echo "Instalando pacotes necessários para o ambiente Python..."
         echo "Você será solicitado a fornecer sua senha para instalar os pacotes do sistema."
         
-        # Determinar o pacote python3-venv correto baseado na versão do Python
-        VENV_PACKAGE="python3-venv"
-        if [ -n "$PYTHON_VERSION" ]; then
-            VENV_PACKAGE="python3-venv python3-full"
-        fi
-        
         sudo apt update
-        sudo apt install -y python3-pip $VENV_PACKAGE
+        sudo apt install -y python3-pip python3-venv python3-full
         
         if [ $? -ne 0 ]; then
             echo "⚠️ Falha ao instalar pacotes necessários."
             echo "Por favor, instale manualmente os seguintes pacotes e execute este script novamente:"
-            echo "  - python3-pip"
-            echo "  - $VENV_PACKAGE"
+            echo "  sudo apt install python3-pip python3-venv python3-full"
             exit 1
         fi
     fi
@@ -113,17 +105,34 @@ EOF
 # Criar diretório de logs
 create_log_dir
 
-# Criar ambiente virtual Python
+# Remover ambiente virtual anterior se existir
+if [ -d "venv" ]; then
+    echo "Removendo ambiente virtual anterior..."
+    rm -rf venv
+fi
+
+# Criar ambiente virtual Python com acesso aos pacotes do sistema
 echo ""
 echo "Configurando ambiente virtual Python..."
-python3 -m venv venv
+python3 -m venv --system-site-packages venv
 
 # Verificar se a criação do ambiente virtual foi bem-sucedida
 if [ ! -f "venv/bin/activate" ]; then
     echo "⚠️ Falha ao criar o ambiente virtual Python."
-    echo "Por favor, tente criar manualmente com o comando:"
-    echo "  python3 -m venv venv"
-    exit 1
+    echo ""
+    echo "Tentando método alternativo..."
+    python3 -m venv venv
+    
+    if [ ! -f "venv/bin/activate" ]; then
+        echo "⚠️ Falha persistente na criação do ambiente virtual."
+        echo ""
+        echo "Por favor, tente os seguintes comandos manualmente:"
+        echo "  sudo apt install python3-venv python3-full"
+        echo "  python3 -m venv --system-site-packages venv"
+        echo ""
+        echo "Ou use o método Docker como descrito no README.md"
+        exit 1
+    fi
 fi
 
 source venv/bin/activate
@@ -132,25 +141,37 @@ source venv/bin/activate
 echo ""
 echo "Instalando dependências..."
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install --no-cache-dir -r requirements.txt
 
-# Se a instalação falhar, ofereça instruções alternativas
+# Se a instalação falhar, tente com --break-system-packages
 if [ $? -ne 0 ]; then
-    echo "⚠️ Falha ao instalar as dependências."
-    echo "Isso pode ocorrer em sistemas Ubuntu mais recentes com ambientes Python gerenciados externamente."
+    echo "⚠️ Falha ao instalar as dependências. Tentando método alternativo..."
     echo ""
-    echo "Tente o seguinte método alternativo:"
-    echo "1. Crie um ambiente virtual fora do sistema:"
-    echo "   python3 -m venv --system-site-packages venv"
-    echo ""
-    echo "2. Ative o ambiente virtual:"
-    echo "   source venv/bin/activate"
-    echo ""
-    echo "3. Instale as dependências com:"
-    echo "   python -m pip install -r requirements.txt --no-cache-dir"
-    echo ""
-    echo "Ou use o método Docker descrito no README.md"
-    exit 1
+    deactivate
+    rm -rf venv
+    
+    echo "Criando novo arquivo de requisitos ajustado..."
+    # Remover restrições de versão muito específicas
+    sed 's/==/>=/g' requirements.txt > requirements_min.txt
+    
+    echo "Criando ambiente virtual com pacotes do sistema..."
+    python3 -m venv --system-site-packages venv
+    source venv/bin/activate
+    
+    echo "Instalando dependências com requisitos mínimos..."
+    python -m pip install --no-cache-dir -r requirements_min.txt
+    
+    if [ $? -ne 0 ]; then
+        echo "⚠️ Todas as tentativas de instalação falharam."
+        echo ""
+        echo "Recomendamos usar o método Docker:"
+        echo "1. Certifique-se de que o Docker está instalado:"
+        echo "   sudo apt install docker.io docker-compose"
+        echo ""
+        echo "2. Configure e execute o Docker:"
+        echo "   docker-compose up -d"
+        exit 1
+    fi
 fi
 
 # Tornar scripts executáveis

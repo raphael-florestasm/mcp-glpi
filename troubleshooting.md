@@ -8,70 +8,114 @@ Este guia oferece soluções para problemas comuns encontrados durante a instala
 
 Este erro ocorre quando os pacotes necessários para criar ambientes virtuais Python não estão instalados no sistema.
 
-**Solução:**
+**Solução Passo a Passo:**
 ```bash
-# Para Ubuntu/Debian
+# 1. Instale os pacotes necessários do sistema (NÃO use pip para isso)
 sudo apt update
 sudo apt install python3-venv python3-pip python3-full
 
-# Tente novamente criar o ambiente virtual
-python3 -m venv venv
+# 2. Verifique se a instalação foi bem-sucedida
+dpkg -l | grep python3-venv
+dpkg -l | grep python3-full
+
+# 3. Agora tente criar o ambiente virtual
+python3 -m venv --system-site-packages venv
 ```
+
+> ⚠️ **IMPORTANTE**: NUNCA tente instalar `python3-venv` usando pip. Este é um pacote do sistema que deve ser instalado via `apt`.
 
 ### 2. Erro: "externally-managed-environment"
 
-Esse erro ocorre em distribuições Linux mais recentes (como Ubuntu 22.04+) que usam ambientes Python gerenciados pelo sistema por padrão.
+Esse erro acontece em distribuições Ubuntu mais recentes (22.04+) que implementam o PEP 668, que previne a instalação de pacotes Python globalmente via pip para proteger o sistema operacional.
 
-**Soluções:**
+**Solução Completa:**
 
-**Opção 1:** Usar um ambiente virtual com acesso aos pacotes do sistema
+**Passo 1:** Certifique-se de que os pacotes necessários do sistema estão instalados
 ```bash
-# Remova qualquer ambiente virtual existente
-rm -rf venv
-
-# Crie um novo ambiente virtual com acesso aos pacotes do sistema
-python3 -m venv --system-site-packages venv
-source venv/bin/activate
-
-# Instale as dependências
-python -m pip install -r requirements.txt --no-cache-dir
+sudo apt update
+sudo apt install -y python3-pip python3-venv python3-full
 ```
 
-**Opção 2:** Usar o Docker (recomendado para servidores)
+**Passo 2:** Remova qualquer ambiente virtual anterior com problemas
 ```bash
-# Certifique-se de que o Docker está instalado
-sudo apt install docker.io docker-compose
+rm -rf venv
+```
 
-# Configure e inicie o contêiner
+**Passo 3:** Crie um ambiente virtual usando a flag `--system-site-packages`
+```bash
+python3 -m venv --system-site-packages venv
+```
+
+**Passo 4:** Ative o ambiente virtual
+```bash
+source venv/bin/activate
+```
+
+**Passo 5:** Instale as dependências sem usar o cache e com versões mínimas
+```bash
+# Criar versão mais flexível do arquivo de requisitos
+sed 's/==/>=/g' requirements.txt > requirements_min.txt
+
+# Instalar dependências
+python -m pip install --no-cache-dir -r requirements_min.txt
+```
+
+**Método Alternativo - Docker (Recomendado para sistemas com problemas persistentes):**
+```bash
+# Instalar Docker se ainda não estiver instalado
+sudo apt update
+sudo apt install -y docker.io docker-compose
+
+# Configurar e executar
 cp .env.example .env
 # Edite o arquivo .env com suas configurações
-nano .env
+nano .env  
 
-# Inicie o contêiner
+# Iniciar o contêiner
 docker-compose up -d
-```
-
-**Opção 3:** Instalar globalmente (não recomendado para ambientes de produção)
-```bash
-pip install -r requirements.txt --break-system-packages
 ```
 
 ### 3. Erro ao ativar o ambiente virtual: "No such file or directory"
 
-Este erro ocorre quando o script tenta ativar um ambiente virtual que não foi criado com sucesso.
+Este erro indica que o ambiente virtual não foi criado corretamente ou o caminho está incorreto.
 
 **Solução:**
 ```bash
 # Verifique se os pacotes necessários estão instalados
-sudo apt install python3-venv python3-pip python3-full
+sudo apt install -y python3-venv python3-pip python3-full
 
-# Crie o ambiente virtual manualmente
-python3 -m venv venv
+# Remova qualquer ambiente virtual anterior problemático
+rm -rf venv myproject-env
+
+# Crie um novo ambiente virtual (com nome consistente)
+python3 -m venv --system-site-packages venv
+
+# Verifique se o arquivo de ativação existe
+ls -la venv/bin/activate
+
+# Ative o ambiente virtual com o caminho correto
 source venv/bin/activate
+```
 
-# Continue com a instalação
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+## Problemas com Python 3.12
+
+A versão Python 3.12 introduziu mudanças adicionais na forma como os ambientes são gerenciados. Se você está usando Python 3.12 no Ubuntu, considere estas opções adicionais:
+
+### Opção 1: Usar pipx para aplicações isoladas
+```bash
+# Instale pipx
+sudo apt install pipx
+
+# Use pipx para instalar ferramentas Python em ambientes isolados
+pipx install <nome-do-pacote>
+```
+
+### Opção 2: Usar o Docker (recomendado)
+O uso do Docker evita completamente os problemas com o gerenciamento de pacotes Python do sistema:
+
+```bash
+# Iniciar o MCP GLPI Server via Docker
+docker-compose up -d
 ```
 
 ## Problemas de Conexão

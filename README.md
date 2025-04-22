@@ -26,7 +26,7 @@ Servidor MCP (Management Control Protocol) para integração com GLPI (Gestionna
 
 ## 💾 Instalação
 
-### Método 1: Instalação Interativa (Recomendado)
+### Método 1: Instalação Interativa (Recomendado para a maioria dos sistemas)
 
 A maneira mais simples de instalar o MCP GLPI Server é usando nosso assistente interativo:
 
@@ -42,21 +42,25 @@ chmod +x setup_interactive.sh
 ./setup_interactive.sh
 ```
 
-O script irá guiá-lo através do processo de configuração, solicitando as informações necessárias:
-1. URL do GLPI
-2. App-Token do GLPI
-3. User-Token do GLPI
-4. ID da Entidade padrão
-5. Configurações do servidor (host, porta)
+### Método 2: Instalação via Docker (Recomendado para Ubuntu 22.04+)
 
-O script automaticamente:
-- Gera uma chave JWT segura
-- Cria o arquivo .env com suas configurações
-- Configura o ambiente virtual Python
-- Instala todas as dependências
-- Prepara o servidor para execução
+Para sistemas Ubuntu mais recentes que usam ambientes Python gerenciados externamente, recomendamos a instalação via Docker:
 
-### Método 2: Instalação manual
+```bash
+# Clone o repositório
+git clone https://github.com/raphael-florestasm/mcp-glpi.git
+cd mcp-glpi
+
+# Torne o script de instalação executável
+chmod +x setup_ubuntu_docker.sh
+
+# Execute o script de instalação via Docker
+./setup_ubuntu_docker.sh
+```
+
+Este método evita problemas com o gerenciamento de pacotes Python no Ubuntu 22.04+ e oferece um ambiente isolado e consistente para a execução do MCP GLPI Server.
+
+### Método 3: Instalação manual
 
 Se preferir configurar manualmente:
 
@@ -79,7 +83,7 @@ cp .env.example .env
 # Edite o arquivo .env com suas configurações
 ```
 
-### Método 3: Usando Docker
+### Método 4: Usando Docker
 
 ```bash
 # Clone o repositório
